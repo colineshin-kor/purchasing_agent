@@ -1,966 +1,444 @@
-import { useState, useEffect } from "react";
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전문업자 매입지원 프로덕트 - 와이어프레임</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-const S = { label: "판매자", bg: "#edf7f1", color: "#15653a", border: "#a3d9b8" };
-const B = { label: "업자",   bg: "#eff3ff", color: "#1d3fac", border: "#a5b8f5" };
-const P = { label: "시스템", bg: "#f3f4f6", color: "#374151", border: "#c9cdd6" };
-const C = { label: "과금",   bg: "#fff8ec", color: "#8a4e00", border: "#f5d09a" };
-const T = { label: "미정",   bg: "#fef9c3", color: "#713f12", border: "#fde047" };
-const PW = 200;
+    <script type="text/babel">
+        // 브라우저 환경을 위해 React 훅들을 구조분해 할당합니다.
+        const { useState, useEffect } = React;
 
-function Actor({ type, sm }) {
-  return <span style={{ display:"inline-flex", alignItems:"center", padding:sm?"2px 7px":"3px 9px", fontSize:sm?10:11, fontWeight:600, letterSpacing:".02em", borderRadius:3, background:type.bg, color:type.color, border:"1px solid "+type.border, whiteSpace:"nowrap", lineHeight:1.5 }}>{type.label}</span>;
-}
-function Chip({ text, color, bg, border }) {
-  return <span style={{ display:"inline-block", padding:"2px 7px", fontSize:10, fontWeight:700, letterSpacing:".04em", textTransform:"uppercase", borderRadius:2, background:bg||"#f3f4f6", color:color||"#374151", border:"1px solid "+(border||"#c9cdd6") }}>{text}</span>;
-}
-function Status({ v }) {
-  const m = { done:{t:"확정",bg:"#f0fdf4",c:"#166534",b:"#a7f3d0"}, pending:{t:"PENDING",bg:"#fff1f1",c:"#b91c1c",b:"#fca5a5"}, deciding:{t:"TBD",bg:"#fffbeb",c:"#92400e",b:"#fde68a"} }[v]||{t:v,bg:"#f3f4f6",c:"#374151",b:"#c9cdd6"};
-  return <Chip text={m.t} color={m.c} bg={m.bg} border={m.b} />;
-}
-function Sec({ title }) { return <div style={{ fontSize:10, fontWeight:700, color:"#6b6860", letterSpacing:".06em", marginBottom:10 }}>{title}</div>; }
+        // --- 여기서부터는 작성하신 코드를 브라우저용으로 소폭 수정한 내용입니다 ---
+        const S = { label: "판매자", bg: "#edf7f1", color: "#15653a", border: "#a3d9b8" };
+        const B = { label: "업자",   bg: "#eff3ff", color: "#1d3fac", border: "#a5b8f5" };
+        const P = { label: "시스템", bg: "#f3f4f6", color: "#374151", border: "#c9cdd6" };
+        const C = { label: "과금",   bg: "#fff8ec", color: "#8a4e00", border: "#f5d09a" };
+        const T = { label: "미정",   bg: "#fef9c3", color: "#713f12", border: "#fde047" };
+        const PW = 200;
 
-// ── Wireframe primitives ──────────────────────────────────────────────────────
-function Phone({ children, bare }) {
-  return (
-    <div style={{ width:PW, flexShrink:0, background:"#fff", border:"2px solid #1a1917", borderRadius:22, overflow:"hidden", boxShadow:"4px 4px 0 #c9cdd6", alignSelf:"flex-start" }}>
-      <div style={{ background:"#1a1917", padding:"7px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <span style={{ fontSize:9, color:"#fff", fontWeight:700 }}>9:41</span>
-        <span style={{ fontSize:7, color:"#aaa", letterSpacing:1 }}>▲▲ ◈ ■</span>
-      </div>
-      {children}
-      <div style={{ height:16, background:"#fff", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ width:40, height:4, background:"#e8e6e0", borderRadius:2 }} />
-      </div>
-    </div>
-  );
-}
-function PhoneTabs({ tabs, active, onSelect }) {
-  return (
-    <div style={{ display:"flex", borderBottom:"1px solid #e8e6e0", marginBottom:8 }}>
-      {tabs.map(t => <div key={t} onClick={() => onSelect(t)} style={{ flex:1, textAlign:"center", padding:"6px 0", fontSize:9, fontWeight:active===t?700:400, color:active===t?"#1a1917":"#9b9890", borderBottom:active===t?"2px solid #1a1917":"2px solid transparent", cursor:"pointer" }}>{t}</div>)}
-    </div>
-  );
-}
-function WRect({ h=16, label, dashed=false, fill="#f7f6f3", color="#9b9890", mb=6, radius=4 }) {
-  return <div style={{ height:h, background:fill, border:"1px "+(dashed?"dashed":"solid")+" #d5d2cb", borderRadius:radius, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:mb }}>{label && <span style={{ fontSize:8.5, color, fontWeight:500, textAlign:"center", lineHeight:1.3, padding:"0 5px" }}>{label}</span>}</div>;
-}
-function WRow({ children, gap=5, mb=6 }) { return <div style={{ display:"flex", gap, marginBottom:mb }}>{children}</div>; }
-function WBtn({ label, primary=false, flex=1, disabled=false, red=false }) {
-  const bg = disabled?"#f0ede6" : red?"#e53935" : primary?"#1a1917":"#f7f6f3";
-  const bc = disabled?"#d5d2cb" : red?"#e53935" : primary?"#1a1917":"#d5d2cb";
-  const tc = disabled?"#c9cdd6" : (primary||red)?"#fff":"#374151";
-  return <div style={{ flex, height:26, background:bg, border:"1px solid "+bc, borderRadius:5, display:"flex", alignItems:"center", justifyContent:"center", cursor:disabled?"default":"pointer" }}><span style={{ fontSize:9, color:tc, fontWeight:700 }}>{label}</span></div>;
-}
-function WLabel({ text }) { return <div style={{ fontSize:9, color:"#9b9890", marginBottom:4 }}>{text}</div>; }
-function WDivider({ my=6 }) { return <div style={{ borderTop:"1px solid #f0ede6", margin:`${my}px 0` }} />; }
-function WInput({ placeholder }) {
-  return <div style={{ border:"1px solid #d5d2cb", borderRadius:4, padding:"5px 8px", marginBottom:6 }}><span style={{ fontSize:8.5, color:"#c9cdd6" }}>{placeholder}</span></div>;
-}
-function WChips({ options, selected, onSelect }) {
-  return (
-    <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
-      {options.map(o => (
-        <div key={o} onClick={() => onSelect(o)} style={{ padding:"4px 8px", border:"1.5px solid "+(selected===o?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer", background:selected===o?"#fff":"#fff" }}>
-          <span style={{ fontSize:8.5, fontWeight:selected===o?700:400, color:selected===o?"#1a1917":"#374151" }}>{o}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-function WCheck({ text, checked }) {
-  return (
-    <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:6 }}>
-      <div style={{ width:11, height:11, border:"1.5px solid "+(checked?"#1a1917":"#c9cdd6"), borderRadius:2, background:checked?"#1a1917":"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        {checked && <span style={{ fontSize:7, color:"#fff" }}>✓</span>}
-      </div>
-      <span style={{ fontSize:8.5, color:"#374151" }}>{text}</span>
-    </div>
-  );
-}
-function WTextarea({ placeholder, rows=3 }) {
-  return (
-    <div style={{ border:"1px solid #d5d2cb", borderRadius:4, padding:"5px 8px", marginBottom:3, minHeight:rows*16 }}>
-      <span style={{ fontSize:8, color:"#c9cdd6", lineHeight:1.5 }}>{placeholder}</span>
-    </div>
-  );
-}
-function WQty() {
-  return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-      <span style={{ fontSize:9, fontWeight:600, color:"#1a1917" }}>수량</span>
-      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-        <div style={{ width:16, height:16, border:"1px solid #d5d2cb", borderRadius:2, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:9, color:"#374151" }}>−</span></div>
-        <span style={{ fontSize:9, fontWeight:600 }}>1개</span>
-        <div style={{ width:16, height:16, border:"1px solid #d5d2cb", borderRadius:2, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:9, color:"#374151" }}>+</span></div>
-      </div>
-    </div>
-  );
-}
+        function Actor({ type, sm }) {
+          return <span style={{ display:"inline-flex", alignItems:"center", padding:sm?"2px 7px":"3px 9px", fontSize:sm?10:11, fontWeight:600, letterSpacing:".02em", borderRadius:3, background:type.bg, color:type.color, border:"1px solid "+type.border, whiteSpace:"nowrap", lineHeight:1.5 }}>{type.label}</span>;
+        }
+        function Chip({ text, color, bg, border }) {
+          return <span style={{ display:"inline-block", padding:"2px 7px", fontSize:10, fontWeight:700, letterSpacing:".04em", textTransform:"uppercase", borderRadius:2, background:bg||"#f3f4f6", color:color||"#374151", border:"1px solid "+(border||"#c9cdd6") }}>{text}</span>;
+        }
+        function Status({ v }) {
+          const m = { done:{t:"확정",bg:"#f0fdf4",c:"#166534",b:"#a7f3d0"}, pending:{t:"PENDING",bg:"#fff1f1",c:"#b91c1c",b:"#fca5a5"}, deciding:{t:"TBD",bg:"#fffbeb",c:"#92400e",b:"#fde68a"} }[v]||{t:v,bg:"#f3f4f6",c:"#374151",b:"#c9cdd6"};
+          return <Chip text={m.t} color={m.c} bg={m.bg} border={m.b} />;
+        }
+        function Sec({ title }) { return <div style={{ fontSize:10, fontWeight:700, color:"#6b6860", letterSpacing:".06em", marginBottom:10 }}>{title}</div>; }
 
-// ── Bottom tab bar ─────────────────────────────────────────────────────────────
-function BottomBar({ active }) {
-  const tabs = [
-    { icon:"←", label:"" },
-    { icon:"+", label:"견적신청", key:"quote" },
-    { icon:"≡", label:"내 요청서", key:"list" },
-    { icon:"♡", label:"서비스 소개", key:"info" },
-  ];
-  return (
-    <div style={{ borderTop:"1px solid #e8e6e0", padding:"5px 4px 2px", display:"flex", gap:0, background:"#fff" }}>
-      {tabs.map((t,i) => (
-        <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
-          <div style={{ width:i===1?22:16, height:i===1?22:16, borderRadius:i===1?"50%":"3px", background:i===1?"#1a1917":"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <span style={{ fontSize:i===1?11:10, color:i===1?"#fff":active===t.key?"#1a1917":"#c9cdd6", fontWeight:700 }}>{t.icon}</span>
-          </div>
-          {t.label && <span style={{ fontSize:6.5, color:active===t.key?"#1a1917":"#c9cdd6", fontWeight:active===t.key?700:400 }}>{t.label}</span>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Screen 1: 매입 홈 (Image 1) ───────────────────────────────────────────────
-function Screen1() {
-  return (
-    <Phone>
-      <div style={{ padding:"8px 12px 0" }}>
-        <span style={{ fontSize:14, color:"#374151" }}>‹</span>
-      </div>
-      <div style={{ padding:"6px 12px 10px" }}>
-        <div style={{ fontSize:14, fontWeight:800, color:"#1a1917", lineHeight:1.35, marginBottom:4 }}>더 쉬운 거래,<br/>매입 판매로 해결해요</div>
-        <div style={{ fontSize:8.5, color:"#9b9890", marginBottom:10 }}>여러 견적을 제안받고 즉시 판매할 수 있어요.</div>
-        {/* Banner */}
-        <div style={{ height:52, background:"#f0ede6", borderRadius:8, marginBottom:12 }} />
-        {/* Category section */}
-        <div style={{ fontSize:10, fontWeight:700, color:"#1a1917", marginBottom:8 }}>견적 신청하기</div>
-        <div style={{ display:"flex", gap:5 }}>
-          {[["👜","명품"],["📱","스마트폰"],["💻","디지털기기"],["🏍","오토바이"]].map(([e,l]) => (
-            <div key={l} style={{ flex:1, height:46, background:"#f7f6f3", border:"1px solid #e8e6e0", borderRadius:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2 }}>
-              <span style={{ fontSize:14 }}>{e}</span>
-              <span style={{ fontSize:7, color:"#374151", fontWeight:600, textAlign:"center", lineHeight:1.2 }}>{l}</span>
+        function Phone({ children, bare }) {
+          return (
+            <div style={{ width:PW, flexShrink:0, background:"#fff", border:"2px solid #1a1917", borderRadius:22, overflow:"hidden", boxShadow:"4px 4px 0 #c9cdd6", alignSelf:"flex-start" }}>
+              <div style={{ background:"#1a1917", padding:"7px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span style={{ fontSize:9, color:"#fff", fontWeight:700 }}>9:41</span>
+                <span style={{ fontSize:7, color:"#aaa", letterSpacing:1 }}>▲▲ ◈ ■</span>
+              </div>
+              {children}
+              <div style={{ height:16, background:"#fff", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ width:40, height:4, background:"#e8e6e0", borderRadius:2 }} />
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
-      <BottomBar active="quote" />
-    </Phone>
-  );
-}
-
-// ── Screen 2: 견적 폼 (Image 2-5, interactive by category) ────────────────────
-function Screen2() {
-  const [cat, setCat] = useState("명품");
-  const [luxury, setLuxury] = useState(null);
-  const [asType, setAsType] = useState(null);
-  const [repair, setRepair] = useState(null);
-  const [cap, setCap] = useState(null);
-  const [phase, setPhase] = useState("form"); // form | done | list
-
-  if (phase === "list") return <ScreenMyList />;
-
-  if (phase === "done") {
-    return (
-      <Phone>
-        <div style={{ padding:"10px 12px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:230 }}>
-          <div style={{ width:44, height:44, borderRadius:"50%", background:"#00c49a", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
-            <span style={{ fontSize:22, color:"#fff" }}>✓</span>
-          </div>
-          <div style={{ fontSize:13, fontWeight:700, color:"#1a1917", textAlign:"center", lineHeight:1.4, marginBottom:6 }}>전문가에게<br/>견적 요청이 전달되었어요</div>
-          <div style={{ fontSize:8.5, color:"#9b9890", textAlign:"center", lineHeight:1.6, marginBottom:20 }}>견적이 도착하면 번개톡으로 알려드릴게요.<br/>최대 24시간이 소요될 수 있어요.</div>
-          <div onClick={() => setPhase("list")} style={{ width:"100%", height:28, background:"#e53935", borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
-            <span style={{ fontSize:10, color:"#fff", fontWeight:700 }}>견적 확인하기</span>
-          </div>
-        </div>
-      </Phone>
-    );
-  }
-
-  const catTitle = { 명품:"명품", 스마트폰:"스마트폰", 디지털기기:"디지털 기기", 오토바이:"오토바이" }[cat];
-
-  return (
-    <Phone>
-      <div style={{ padding:"7px 12px 10px", overflowY:"auto", maxHeight:300 }}>
-        <span style={{ fontSize:12, color:"#374151" }}>‹</span>
-        <div style={{ fontSize:11, fontWeight:700, color:"#1a1917", lineHeight:1.4, margin:"4px 0 8px" }}>
-          견적 받고 싶은<br/>{catTitle}에 대해 알려주세요
-        </div>
-        {/* Photo upload */}
-        <WLabel text="사진 *  최소 1장 이상의 사진을 등록해 주세요." />
-        <div style={{ width:36, height:36, background:"#f7f6f3", border:"1px solid #d5d2cb", borderRadius:6, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", marginBottom:8 }}>
-          <span style={{ fontSize:12, color:"#c9cdd6" }}>◎</span>
-          <span style={{ fontSize:6.5, color:"#c9cdd6" }}>0/10</span>
-        </div>
-
-        {/* 브랜드와 모델명 (모든 카테고리 공통) */}
-        {cat !== "스마트폰" && (
-          <>
-            <WLabel text="브랜드와 모델명 *" />
-            <WInput placeholder="브랜드와 모델명을 입력해 주세요" />
-          </>
-        )}
-
-        {/* 스마트폰 전용 */}
-        {cat === "스마트폰" && (
-          <>
-            <WLabel text="브랜드 *" />
-            <div style={{ border:"1px solid #d5d2cb", borderRadius:4, padding:"5px 8px", marginBottom:6, display:"flex", justifyContent:"space-between" }}>
-              <span style={{ fontSize:8.5, color:"#c9cdd6" }}>브랜드를 선택해 주세요</span>
-              <span style={{ fontSize:9, color:"#9b9890" }}>∨</span>
+          );
+        }
+        function PhoneTabs({ tabs, active, onSelect }) {
+          return (
+            <div style={{ display:"flex", borderBottom:"1px solid #e8e6e0", marginBottom:8 }}>
+              {tabs.map(t => <div key={t} onClick={() => onSelect(t)} style={{ flex:1, textAlign:"center", padding:"6px 0", fontSize:9, fontWeight:active===t?700:400, color:active===t?"#1a1917":"#9b9890", borderBottom:active===t?"2px solid #1a1917":"2px solid transparent", cursor:"pointer" }}>{t}</div>)}
             </div>
-            <WLabel text="모델명 *" />
-            <WInput placeholder="모델명을 입력해 주세요" />
-            <WLabel text="용량 *" />
-            <WRow gap={3} mb={6}>
-              {["64GB","128GB","256GB"].map(v => (
-                <div key={v} onClick={() => setCap(v)} style={{ flex:1, padding:"4px 0", textAlign:"center", fontSize:8, fontWeight:cap===v?700:400, color:cap===v?"#1a1917":"#374151", border:"1.5px solid "+(cap===v?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer" }}>{v}</div>
+          );
+        }
+        function WRect({ h=16, label, dashed=false, fill="#f7f6f3", color="#9b9890", mb=6, radius=4 }) {
+          return <div style={{ height:h, background:fill, border:"1px "+(dashed?"dashed":"solid")+" #d5d2cb", borderRadius:radius, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:mb }}>{label && <span style={{ fontSize:8.5, color, fontWeight:500, textAlign:"center", lineHeight:1.3, padding:"0 5px" }}>{label}</span>}</div>;
+        }
+        function WRow({ children, gap=5, mb=6 }) { return <div style={{ display:"flex", gap, marginBottom:mb }}>{children}</div>; }
+        function WBtn({ label, primary=false, flex=1, disabled=false, red=false }) {
+          const bg = disabled?"#f0ede6" : red?"#e53935" : primary?"#1a1917":"#f7f6f3";
+          const bc = disabled?"#d5d2cb" : red?"#e53935" : primary?"#1a1917":"#d5d2cb";
+          const tc = disabled?"#c9cdd6" : (primary||red)?"#fff":"#374151";
+          return <div style={{ flex, height:26, background:bg, border:"1px solid "+bc, borderRadius:5, display:"flex", alignItems:"center", justifyContent:"center", cursor:disabled?"default":"pointer" }}><span style={{ fontSize:9, color:tc, fontWeight:700 }}>{label}</span></div>;
+        }
+        function WLabel({ text }) { return <div style={{ fontSize:9, color:"#9b9890", marginBottom:4 }}>{text}</div>; }
+        function WDivider({ my=6 }) { return <div style={{ borderTop:"1px solid #f0ede6", margin:`${my}px 0` }} />; }
+        function WInput({ placeholder }) {
+          return <div style={{ border:"1px solid #d5d2cb", borderRadius:4, padding:"5px 8px", marginBottom:6 }}><span style={{ fontSize:8.5, color:"#c9cdd6" }}>{placeholder}</span></div>;
+        }
+        function WChips({ options, selected, onSelect }) {
+          return (
+            <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
+              {options.map(o => (
+                <div key={o} onClick={() => onSelect(o)} style={{ padding:"4px 8px", border:"1.5px solid "+(selected===o?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer", background:selected===o?"#fff":"#fff" }}>
+                  <span style={{ fontSize:8.5, fontWeight:selected===o?700:400, color:selected===o?"#1a1917":"#374151" }}>{o}</span>
+                </div>
               ))}
-            </WRow>
-            <WRow gap={3} mb={6}>
-              {["512GB","1TB"].map(v => (
-                <div key={v} onClick={() => setCap(v)} style={{ flex:1, padding:"4px 0", textAlign:"center", fontSize:8, fontWeight:cap===v?700:400, color:cap===v?"#1a1917":"#374151", border:"1.5px solid "+(cap===v?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer" }}>{v}</div>
-              ))}
-              <div style={{ flex:1 }} />
-            </WRow>
-            <WLabel text="A/S 여부 *" />
-            <WRow gap={4} mb={3}>
-              {["공식 A/S","사설 수리"].map(v => (
-                <div key={v} onClick={() => setAsType(v)} style={{ flex:1, padding:"4px 0", textAlign:"center", fontSize:8.5, fontWeight:asType===v?700:400, border:"1.5px solid "+(asType===v?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer" }}>{v}</div>
-              ))}
-            </WRow>
-            <WCheck text="수리를 받지 않았어요" />
-            <WLabel text="배터리 효율 *" />
-            <WInput placeholder="설정에서 배터리 효율을 확인해 주세요." />
-            <WCheck text="잘 모르겠어요" />
-          </>
-        )}
-
-        {/* 명품 전용 */}
-        {cat === "명품" && (
-          <>
-            <WLabel text="구성품" />
-            <WRow gap={3} mb={3}>
-              {["정품 박스","보증서","더스트백"].map(v => (
-                <div key={v} onClick={() => setLuxury(v)} style={{ flex:1, padding:"4px 0", textAlign:"center", fontSize:7.5, fontWeight:luxury===v?700:400, border:"1.5px solid "+(luxury===v?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer" }}>{v}</div>
-              ))}
-            </WRow>
-            <WRow gap={3} mb={3}>
-              <div onClick={() => setLuxury("영수증")} style={{ padding:"4px 12px", fontSize:7.5, fontWeight:luxury==="영수증"?700:400, border:"1.5px solid "+(luxury==="영수증"?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer" }}>영수증</div>
-            </WRow>
-            <WCheck text="구성품이 없어요" />
-          </>
-        )}
-
-        {/* 오토바이 전용 */}
-        {cat === "오토바이" && (
-          <>
-            <WLabel text="모델 연식" />
-            <div style={{ border:"1px solid #d5d2cb", borderRadius:4, padding:"5px 8px", marginBottom:3, display:"flex", justifyContent:"space-between" }}>
-              <span style={{ fontSize:8.5, color:"#c9cdd6" }}>모델연식을 선택해 주세요</span>
-              <span style={{ fontSize:9, color:"#9b9890" }}>∨</span>
             </div>
-            <WCheck text="잘 모르겠어요" />
-            <WLabel text="주행거리" />
-            <WInput placeholder="주행거리를 입력해 주세요" />
-            <WCheck text="잘 모르겠어요" />
-            <WLabel text="수리 이력" />
-            <WRow gap={4} mb={6}>
-              {["있음","없음"].map(v => (
-                <div key={v} onClick={() => setRepair(v)} style={{ flex:1, padding:"4px 0", textAlign:"center", fontSize:9, fontWeight:repair===v?700:400, border:"1.5px solid "+(repair===v?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer" }}>{v}</div>
-              ))}
-            </WRow>
-          </>
-        )}
-
-        {/* 디지털기기 전용 */}
-        {cat === "디지털기기" && (
-          <>
-            <WLabel text="A/S 여부 *" />
-            <WRow gap={4} mb={3}>
-              {["공식 A/S","사설 수리"].map(v => (
-                <div key={v} onClick={() => setAsType(v)} style={{ flex:1, padding:"4px 0", textAlign:"center", fontSize:8.5, fontWeight:asType===v?700:400, border:"1.5px solid "+(asType===v?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer" }}>{v}</div>
-              ))}
-            </WRow>
-            <WCheck text="수리를 받지 않았어요" />
-          </>
-        )}
-
-        {/* 공통 하단 */}
-        <WLabel text="상세정보 (선택)" />
-        <WTextarea placeholder="상품 구매년도, 상태에 대해 자세히 알려주시면 견적 받는데에 도움돼요." />
-        <div style={{ textAlign:"right", fontSize:7.5, color:"#c9cdd6", marginBottom:8 }}>0/2000</div>
-        <WQty />
-        <div onClick={() => setPhase("done")} style={{ height:26, background:"#fca5a5", borderRadius:5, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", marginTop:4 }}>
-          <span style={{ fontSize:9.5, color:"#fff", fontWeight:700 }}>견적 요청하기</span>
-        </div>
-      </div>
-    </Phone>
-  );
-}
-
-// ── Screen: 내 요청서 (Image 8) ───────────────────────────────────────────────
-function ScreenMyList() {
-  const [tab, setTab] = useState("진행 중");
-  return (
-    <Phone>
-      <div style={{ padding:"8px 12px 0" }}>
-        <span style={{ fontSize:14, color:"#374151" }}>‹</span>
-        <div style={{ fontSize:14, fontWeight:800, color:"#1a1917", margin:"4px 0 10px" }}>내 요청서</div>
-        <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-          {["진행 중","거래 체결","기간 만료"].map(t => (
-            <div key={t} onClick={() => setTab(t)} style={{ padding:"4px 10px", fontSize:9, fontWeight:tab===t?700:400, color:tab===t?"#1a1917":"#9b9890", background:tab===t?"#e8e6e0":"transparent", borderRadius:14, cursor:"pointer" }}>{t}</div>
-          ))}
-        </div>
-        {tab === "진행 중" && (
-          <div style={{ border:"1px solid #e8e6e0", borderRadius:10, padding:"8px 10px", display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:36, height:36, background:"#e8e6e0", borderRadius:6, overflow:"hidden", flexShrink:0 }}>
-              <div style={{ width:"100%", height:"100%", background:"linear-gradient(135deg,#d5d2cb,#f0ede6)" }} />
+          );
+        }
+        function WCheck({ text, checked }) {
+          return (
+            <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:6 }}>
+              <div style={{ width:11, height:11, border:"1.5px solid "+(checked?"#1a1917":"#c9cdd6"), borderRadius:2, background:checked?"#1a1917":"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {checked && <span style={{ fontSize:7, color:"#fff" }}>✓</span>}
+              </div>
+              <span style={{ fontSize:8.5, color:"#374151" }}>{text}</span>
             </div>
+          );
+        }
+        function WTextarea({ placeholder, rows=3 }) {
+          return (
+            <div style={{ border:"1px solid #d5d2cb", borderRadius:4, padding:"5px 8px", marginBottom:3, minHeight:rows*16 }}>
+              <span style={{ fontSize:8, color:"#c9cdd6", lineHeight:1.5 }}>{placeholder}</span>
+            </div>
+          );
+        }
+        function WQty() {
+          return (
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+              <span style={{ fontSize:9, fontWeight:600, color:"#1a1917" }}>수량</span>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:16, height:16, border:"1px solid #d5d2cb", borderRadius:2, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:9, color:"#374151" }}>−</span></div>
+                <span style={{ fontSize:9, fontWeight:600 }}>1개</span>
+                <div style={{ width:16, height:16, border:"1px solid #d5d2cb", borderRadius:2, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:9, color:"#374151" }}>+</span></div>
+              </div>
+            </div>
+          );
+        }
+
+        function BottomBar({ active }) {
+          const tabs = [
+            { icon:"←", label:"" },
+            { icon:"+", label:"견적신청", key:"quote" },
+            { icon:"≡", label:"내 요청서", key:"list" },
+            { icon:"♡", label:"서비스 소개", key:"info" },
+          ];
+          return (
+            <div style={{ borderTop:"1px solid #e8e6e0", padding:"5px 4px 2px", display:"flex", gap:0, background:"#fff" }}>
+              {tabs.map((t,i) => (
+                <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
+                  <div style={{ width:i===1?22:16, height:i===1?22:16, borderRadius:i===1?"50%":"3px", background:i===1?"#1a1917":"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <span style={{ fontSize:i===1?11:10, color:i===1?"#fff":active===t.key?"#1a1917":"#c9cdd6", fontWeight:700 }}>{t.icon}</span>
+                  </div>
+                  {t.label && <span style={{ fontSize:6.5, color:active===t.key?"#1a1917":"#c9cdd6", fontWeight:active===t.key?700:400 }}>{t.label}</span>}
+                </div>
+              ))}
+            </div>
+          );
+        }
+
+        function Screen1() {
+          return (
+            <Phone>
+              <div style={{ padding:"8px 12px 0" }}>
+                <span style={{ fontSize:14, color:"#374151" }}>‹</span>
+              </div>
+              <div style={{ padding:"6px 12px 10px" }}>
+                <div style={{ fontSize:14, fontWeight:800, color:"#1a1917", lineHeight:1.35, marginBottom:4 }}>더 쉬운 거래,<br/>매입 판매로 해결해요</div>
+                <div style={{ fontSize:8.5, color:"#9b9890", marginBottom:10 }}>여러 견적을 제안받고 즉시 판매할 수 있어요.</div>
+                <div style={{ height:52, background:"#f0ede6", borderRadius:8, marginBottom:12 }} />
+                <div style={{ fontSize:10, fontWeight:700, color:"#1a1917", marginBottom:8 }}>견적 신청하기</div>
+                <div style={{ display:"flex", gap:5 }}>
+                  {[["👜","명품"],["📱","스마트폰"],["💻","디지털기기"],["🏍","오토바이"]].map(([e,l]) => (
+                    <div key={l} style={{ flex:1, height:46, background:"#f7f6f3", border:"1px solid #e8e6e0", borderRadius:10, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2 }}>
+                      <span style={{ fontSize:14 }}>{e}</span>
+                      <span style={{ fontSize:7, color:"#374151", fontWeight:600, textAlign:"center", lineHeight:1.2 }}>{l}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <BottomBar active="quote" />
+            </Phone>
+          );
+        }
+
+        function Screen2() {
+          const [cat, setCat] = useState("명품");
+          const [luxury, setLuxury] = useState(null);
+          const [asType, setAsType] = useState(null);
+          const [repair, setRepair] = useState(null);
+          const [cap, setCap] = useState(null);
+          const [phase, setPhase] = useState("form");
+
+          if (phase === "list") return <ScreenMyList />;
+          if (phase === "done") {
+            return (
+              <Phone>
+                <div style={{ padding:"10px 12px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:230 }}>
+                  <div style={{ width:44, height:44, borderRadius:"50%", background:"#00c49a", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
+                    <span style={{ fontSize:22, color:"#fff" }}>✓</span>
+                  </div>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#1a1917", textAlign:"center", lineHeight:1.4, marginBottom:6 }}>전문가에게<br/>견적 요청이 전달되었어요</div>
+                  <div style={{ fontSize:8.5, color:"#9b9890", textAlign:"center", lineHeight:1.6, marginBottom:20 }}>견적이 도착하면 번개톡으로 알려드릴게요.<br/>최대 24시간이 소요될 수 있어요.</div>
+                  <div onClick={() => setPhase("list")} style={{ width:"100%", height:28, background:"#e53935", borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                    <span style={{ fontSize:10, color:"#fff", fontWeight:700 }}>견적 확인하기</span>
+                  </div>
+                </div>
+              </Phone>
+            );
+          }
+
+          const catTitle = { 명품:"명품", 스마트폰:"스마트폰", 디지털기기:"디지털 기기", 오토바이:"오토바이" }[cat];
+          return (
+            <Phone>
+              <div style={{ padding:"7px 12px 10px", overflowY:"auto", maxHeight:300 }}>
+                <span style={{ fontSize:12, color:"#374151" }}>‹</span>
+                <div style={{ fontSize:11, fontWeight:700, color:"#1a1917", lineHeight:1.4, margin:"4px 0 8px" }}>
+                  견적 받고 싶은<br/>{catTitle}에 대해 알려주세요
+                </div>
+                <WLabel text="사진 * 최소 1장 이상의 사진을 등록해 주세요." />
+                <div style={{ width:36, height:36, background:"#f7f6f3", border:"1px solid #d5d2cb", borderRadius:6, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", marginBottom:8 }}>
+                  <span style={{ fontSize:12, color:"#c9cdd6" }}>◎</span>
+                  <span style={{ fontSize:6.5, color:"#c9cdd6" }}>0/10</span>
+                </div>
+                {cat !== "스마트폰" && (
+                  <>
+                    <WLabel text="브랜드와 모델명 *" />
+                    <WInput placeholder="브랜드와 모델명을 입력해 주세요" />
+                  </>
+                )}
+                {cat === "스마트폰" && (
+                  <>
+                    <WLabel text="브랜드 *" />
+                    <div style={{ border:"1px solid #d5d2cb", borderRadius:4, padding:"5px 8px", marginBottom:6, display:"flex", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:8.5, color:"#c9cdd6" }}>브랜드를 선택해 주세요</span>
+                      <span style={{ fontSize:9, color:"#9b9890" }}>∨</span>
+                    </div>
+                    <WLabel text="모델명 *" />
+                    <WInput placeholder="모델명을 입력해 주세요" />
+                    <WLabel text="용량 *" />
+                    <WRow gap={3} mb={6}>
+                      {["64GB","128GB","256GB"].map(v => (
+                        <div key={v} onClick={() => setCap(v)} style={{ flex:1, padding:"4px 0", textAlign:"center", fontSize:8, fontWeight:cap===v?700:400, color:cap===v?"#1a1917":"#374151", border:"1.5px solid "+(cap===v?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer" }}>{v}</div>
+                      ))}
+                    </WRow>
+                    <WLabel text="A/S 여부 *" />
+                    <WRow gap={4} mb={3}>
+                      {["공식 A/S","사설 수리"].map(v => (
+                        <div key={v} onClick={() => setAsType(v)} style={{ flex:1, padding:"4px 0", textAlign:"center", fontSize:8.5, fontWeight:asType===v?700:400, border:"1.5px solid "+(asType===v?"#1a1917":"#d5d2cb"), borderRadius:4, cursor:"pointer" }}>{v}</div>
+                      ))}
+                    </WRow>
+                    <WCheck text="수리를 받지 않았어요" />
+                  </>
+                )}
+                <WLabel text="상세정보 (선택)" />
+                <WTextarea placeholder="상품 구매년도, 상태에 대해 자세히 알려주시면 견적 받는데에 도움돼요." />
+                <WQty />
+                <div onClick={() => setPhase("done")} style={{ height:26, background:"#fca5a5", borderRadius:5, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", marginTop:4 }}>
+                  <span style={{ fontSize:9.5, color:"#fff", fontWeight:700 }}>견적 요청하기</span>
+                </div>
+              </div>
+            </Phone>
+          );
+        }
+
+        function ScreenMyList() {
+          const [tab, setTab] = useState("진행 중");
+          return (
+            <Phone>
+              <div style={{ padding:"8px 12px 0" }}>
+                <span style={{ fontSize:14, color:"#374151" }}>‹</span>
+                <div style={{ fontSize:14, fontWeight:800, color:"#1a1917", margin:"4px 0 10px" }}>내 요청서</div>
+                <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+                  {["진행 중","거래 체결","기간 만료"].map(t => (
+                    <div key={t} onClick={() => setTab(t)} style={{ padding:"4px 10px", fontSize:9, fontWeight:tab===t?700:400, color:tab===t?"#1a1917":"#9b9890", background:tab===t?"#e8e6e0":"transparent", borderRadius:14, cursor:"pointer" }}>{t}</div>
+                  ))}
+                </div>
+                {tab === "진행 중" && (
+                  <div style={{ border:"1px solid #e8e6e0", borderRadius:10, padding:"8px 10px", display:"flex", alignItems:"center", gap:8 }}>
+                    <div style={{ width:36, height:36, background:"#e8e6e0", borderRadius:6, flexShrink:0 }} />
+                    <div>
+                      <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:3 }}>
+                        <div style={{ width:6, height:6, borderRadius:"50%", background:"#00c49a" }} />
+                        <span style={{ fontSize:8, color:"#00c49a", fontWeight:700 }}>1차 견적이 도착했어요</span>
+                      </div>
+                      <div style={{ fontSize:9.5, fontWeight:600, color:"#1a1917" }}>발렌시아가 르카골 솔더백 블랙 스몰</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <BottomBar active="list" />
+            </Phone>
+          );
+        }
+
+        function Screen3() {
+          return (
+            <Phone>
+              <div style={{ padding:"10px 10px" }}>
+                <div style={{ background:"#f7f6f3", border:"1px solid #e8e6e0", borderRadius:10, padding:"10px 12px" }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#1a1917", marginBottom:4 }}>번개장터</div>
+                  <div style={{ fontSize:9.5, color:"#374151", lineHeight:1.6 }}>[매입] 📱 스마트폰 아이폰 15 Pro 견적 요청이 도착했습니다!</div>
+                </div>
+              </div>
+            </Phone>
+          );
+        }
+
+        function Screen4() {
+          return (
+            <Phone>
+              <div style={{ padding:"8px 12px 10px" }}>
+                <span style={{ fontSize:12, color:"#374151" }}>‹</span>
+                <div style={{ fontSize:10, fontWeight:700, color:"#1a1917", margin:"4px 0 8px" }}>가견적 입력</div>
+                <div style={{ background:"#f0fdf4", border:"1px solid #a3d9b8", borderRadius:8, padding:"8px 10px", marginBottom:10 }}>
+                  <div style={{ fontSize:9, fontWeight:700, color:"#15653a", marginBottom:3 }}>📱 아이폰 15 Pro 256GB</div>
+                  <div style={{ fontSize:8.5, color:"#374151" }}>배터리 88% · A/S 없음</div>
+                </div>
+                <WLabel text="매입 희망가 (가견적) *" />
+                <div style={{ border:"2px solid #1a1917", borderRadius:5, padding:"6px 10px", marginBottom:4, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <span style={{ fontSize:16, fontWeight:700, color:"#1a1917" }}>1,080,000</span>
+                  <span style={{ fontSize:9, color:"#9b9890" }}>원</span>
+                </div>
+                <WBtn label="견적 보내기" primary />
+              </div>
+            </Phone>
+          );
+        }
+
+        function Screen5() {
+          const [stopped, setStopped] = useState(false);
+          return (
+            <Phone>
+              <div style={{ padding:"8px 12px 10px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <span style={{ fontSize:12, color:"#374151" }}>‹</span>
+                  <span style={{ fontSize:9, color:"#374151" }}>견적 취소</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                  <div style={{ width:28, height:28, background:"#f7f6f3", border:"1px solid #e8e6e0", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:13 }}>👜</span></div>
+                  <span style={{ fontSize:9, fontWeight:600, color:"#1a1917" }}>발렌시아가 르카골 솔더백</span>
+                </div>
+                <div style={{ fontSize:8, color:stopped?"#b91c1c":"#1d3fac", fontWeight:600, marginBottom:8 }}>
+                  {stopped ? "견적 수신이 중단되었어요" : "🟢 견적 수신 중 · 남은 슬롯 7/10"}
+                </div>
+                <WDivider my={6} />
+                <div onClick={() => setStopped(true)} style={{ border:"1px solid #d5d2cb", borderRadius:5, padding:"6px", textAlign:"center", cursor:"pointer", background:"#fafafa" }}>
+                  <span style={{ fontSize:9, color:"#374151", fontWeight:600 }}>견적 그만 받기</span>
+                </div>
+              </div>
+            </Phone>
+          );
+        }
+
+        function Screen6() {
+          const [tab, setTab] = useState("받은 견적 1");
+          return (
+            <Phone>
+              <div style={{ padding:"8px 12px 10px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                  <span style={{ fontSize:12, color:"#374151" }}>‹</span>
+                  <span style={{ fontSize:9, color:"#374151" }}>견적 취소</span>
+                </div>
+                <div style={{ fontSize:11, fontWeight:700, color:"#1a1917", lineHeight:1.4, marginBottom:6 }}>전문가의 견적을 비교하고<br/>상담해 보세요</div>
+                <PhoneTabs tabs={["받은 견적 1","대화 내역"]} active={tab} onSelect={setTab} />
+                <div style={{ border:"1px solid #e8e6e0", borderRadius:8, padding:"7px 9px", marginBottom:6 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                      <span style={{ fontSize:10, fontWeight:700, color:"#1a1917" }}>아르셀</span>
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#1a1917", marginBottom:2 }}>2,700,000원</div>
+                    <WBtn label="채팅 문의" />
+                  </div>
+              </div>
+            </Phone>
+          );
+        }
+
+        function ScreenTBD({ label }) {
+          return (
+            <Phone>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:210, gap:8, padding:"10px" }}>
+                <div style={{ fontSize:24 }}>🚧</div>
+                <div style={{ fontSize:10, fontWeight:700, color:"#713f12", textAlign:"center" }}>화면 미확정</div>
+                <div style={{ fontSize:8.5, color:"#9b9890", textAlign:"center" }}>{label} 논의 중</div>
+              </div>
+            </Phone>
+          );
+        }
+
+        function Screen10() {
+          return (
+            <Phone>
+              <div style={{ padding:"10px 12px" }}>
+                <div style={{ textAlign:"center", marginBottom:8 }}>
+                  <div style={{ fontSize:11, color:"#1a1917", fontWeight:700 }}>A모바일과의 거래는 어떠셨나요?</div>
+                </div>
+                <WBtn label="후기 남기기" primary />
+              </div>
+            </Phone>
+          );
+        }
+
+        function FeeTable() {
+          const rows = [
+            { cat:"오토바이", sub:"전 기종", fee:"50,000원" },
+            { cat:"스마트폰", sub:"전 기종", fee:"10,000원" },
+          ];
+          return (
+            <div style={{ border:"1px solid #e8e6e0", borderRadius:5, overflow:"hidden", fontSize:11, marginTop:8 }}>
+              {rows.map((r,i) => (
+                <div key={i} style={{ display:"grid", gridTemplateColumns:"72px 1fr 90px", borderBottom:"1px solid #f0ede6", background:"#fff" }}>
+                  <div style={{ padding:"5px 8px" }}>{r.cat}</div>
+                  <div style={{ padding:"5px 8px" }}>{r.sub}</div>
+                  <div style={{ padding:"5px 8px", fontWeight:700 }}>{r.fee}</div>
+                </div>
+              ))}
+            </div>
+          );
+        }
+
+        function TabFlow() {
+          const steps = [
+            { n:1, actor:S, title:"매입 홈 진입", desc:"홈 > 판매탭 진입.", screen:<Screen1 /> },
+            { n:2, actor:S, title:"견적 폼 작성", desc:"상세 정보를 입력합니다.", screen:<Screen2 /> },
+            { n:3, actor:P, title:"업자 알림 발송", desc:"업자에게 푸시가 전송됩니다.", screen:<Screen3 /> },
+            { n:4, actor:B, title:"가견적 입력", desc:"업자가 매입가를 제안합니다.", screen:<Screen4 /> },
+            { n:5, actor:P, title:"견적 도착", desc:"판매자에게 견적이 노출됩니다.", screen:<Screen5 /> },
+            { n:6, actor:S, title:"견적 비교", desc:"상담할 업자를 선택합니다.", screen:<Screen6 /> },
+            { n:7, actor:T, title:"채팅방 생성", desc:"채팅 상담을 시작합니다.", screen:<ScreenTBD label="채팅방" /> },
+            { n:10, actor:S, title:"후기 작성", desc:"거래 완료 후 평가를 남깁니다.", screen:<Screen10 /> },
+          ];
+
+          return (
             <div>
-              <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:3 }}>
-                <div style={{ width:6, height:6, borderRadius:"50%", background:"#00c49a" }} />
-                <span style={{ fontSize:8, color:"#00c49a", fontWeight:700 }}>1차 견적이 도착했어요</span>
-              </div>
-              <div style={{ fontSize:9.5, fontWeight:600, color:"#1a1917" }}>발렌시아가 르카골 솔더백 블랙 스몰</div>
-            </div>
-          </div>
-        )}
-        {tab !== "진행 중" && (
-          <div style={{ textAlign:"center", padding:"40px 0", color:"#c9cdd6", fontSize:9 }}>내역이 없어요</div>
-        )}
-      </div>
-      <BottomBar active="list" />
-    </Phone>
-  );
-}
-
-// ── Screen 3: 업자 알림 ───────────────────────────────────────────────────────
-function Screen3() {
-  return (
-    <Phone>
-      <div style={{ padding:"10px 10px" }}>
-        <div style={{ background:"#f7f6f3", border:"1px solid #e8e6e0", borderRadius:10, padding:"10px 12px" }}>
-          <div style={{ fontSize:10, fontWeight:700, color:"#1a1917", marginBottom:4 }}>번개장터</div>
-          <div style={{ fontSize:9.5, color:"#374151", lineHeight:1.6 }}>[매입] 📱 스마트폰 아이폰 15 Pro 견적 요청이 도착했습니다!</div>
-        </div>
-      </div>
-    </Phone>
-  );
-}
-
-// ── Screen 4: 업자 가견적 입력 ───────────────────────────────────────────────
-function Screen4() {
-  return (
-    <Phone>
-      <div style={{ padding:"8px 12px 10px" }}>
-        <span style={{ fontSize:12, color:"#374151" }}>‹</span>
-        <div style={{ fontSize:10, fontWeight:700, color:"#1a1917", margin:"4px 0 8px" }}>가견적 입력</div>
-        <div style={{ background:"#f0fdf4", border:"1px solid #a3d9b8", borderRadius:8, padding:"8px 10px", marginBottom:10 }}>
-          <div style={{ fontSize:9, fontWeight:700, color:"#15653a", marginBottom:3 }}>📱 아이폰 15 Pro 256GB</div>
-          <div style={{ fontSize:8.5, color:"#374151" }}>배터리 88% · A/S 없음 · 사진 3장</div>
-        </div>
-        <WLabel text="매입 희망가 (가견적) *" />
-        <div style={{ border:"2px solid #1a1917", borderRadius:5, padding:"6px 10px", marginBottom:4, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <span style={{ fontSize:16, fontWeight:700, color:"#1a1917" }}>1,080,000</span>
-          <span style={{ fontSize:9, color:"#9b9890" }}>원</span>
-        </div>
-        <div style={{ fontSize:8.5, color:"#9b9890", marginBottom:8 }}>실제 견적은 상담 후 확정됩니다</div>
-        <WLabel text="어필 메모 (선택, 100자)" />
-        <WRect h={28} label="빠른 수거 가능, 직거래 환영..." dashed color="#c9cdd6" mb={8} />
-        <div style={{ background:"#fff8ec", border:"1px solid #f5d09a", borderRadius:4, padding:"5px 8px", marginBottom:7 }}>
-          <span style={{ fontSize:8.5, color:"#8a4e00", fontWeight:600 }}>전송 시 캐시 500원 차감 · 취소/수정 불가</span>
-        </div>
-        <WBtn label="견적 보내기" primary />
-      </div>
-    </Phone>
-  );
-}
-
-// ── Screen 5: 견적 수신 중 (그만받기) ─────────────────────────────────────────
-function Screen5() {
-  const [stopped, setStopped] = useState(false);
-  return (
-    <Phone>
-      <div style={{ padding:"8px 12px 10px" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-          <span style={{ fontSize:12, color:"#374151" }}>‹</span>
-          <span style={{ fontSize:9, color:"#374151" }}>견적 취소</span>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
-          <div style={{ width:28, height:28, background:"#f7f6f3", border:"1px solid #e8e6e0", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:13 }}>👜</span></div>
-          <span style={{ fontSize:9, fontWeight:600, color:"#1a1917" }}>발렌시아가 르카골 솔더백</span>
-        </div>
-        <div style={{ fontSize:8, color:stopped?"#b91c1c":"#1d3fac", fontWeight:600, marginBottom:8 }}>
-          {stopped ? "견적 수신이 중단되었어요" : "🟢 견적 수신 중 · 남은 슬롯 7/10 · 71h 30m"}
-        </div>
-        <WDivider my={6} />
-        {stopped ? (
-          <div style={{ textAlign:"center", padding:"16px 0" }}>
-            <div style={{ fontSize:9.5, color:"#374151", fontWeight:600, marginBottom:6 }}>받은 견적 3개를 확인하세요</div>
-            <WBtn label="견적 보러가기" primary />
-          </div>
-        ) : (
-          <>
-            <div style={{ background:"#f0fdf4", border:"1px solid #a3d9b8", borderRadius:6, padding:"7px 9px", marginBottom:6 }}>
-              <div style={{ fontSize:9, fontWeight:700, color:"#15653a", marginBottom:2 }}>새 견적 도착 (3개)</div>
-              <div style={{ fontSize:8.5, color:"#374151" }}>아르셀 · 문럭스 · 코코샤넬</div>
-            </div>
-            <div onClick={() => setStopped(true)} style={{ border:"1px solid #d5d2cb", borderRadius:5, padding:"6px", textAlign:"center", cursor:"pointer", background:"#fafafa" }}>
-              <span style={{ fontSize:9, color:"#374151", fontWeight:600 }}>견적 그만 받기</span>
-            </div>
-            <div style={{ fontSize:8, color:"#9b9890", textAlign:"center", marginTop:4 }}>클릭 시 추가 수신 즉시 종료</div>
-          </>
-        )}
-      </div>
-    </Phone>
-  );
-}
-
-// ── Screen 6: 견적 비교 (Image 2 기반, 취소 플로우) ──────────────────────────
-function Screen6() {
-  const [tab, setTab] = useState("받은 견적 1");
-  const [modal, setModal] = useState(false);
-  const [cancelled, setCancelled] = useState(false);
-  const [reason, setReason] = useState(null);
-  const [emptyView, setEmptyView] = useState(false);
-  const reasons = ["견적서 수정이 필요해요","다른 서비스에서 업체를 구했어요","제안받은 견적가가 마음에 안 들어요","단순 변심","기타"];
-
-  if (emptyView) {
-    return (
-      <Phone>
-        <div style={{ padding:"8px 12px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:12, color:"#374151" }}>‹</span><span style={{ fontSize:9, color:"#374151" }}>견적 취소</span></div>
-          <div style={{ fontSize:12, fontWeight:700, color:"#1a1917", lineHeight:1.4, margin:"6px 0 8px" }}>아직 받은 견적이 없어요<br/>업자가 검토 중이에요</div>
-          <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-            <div style={{ fontSize:8.5, fontWeight:700, borderBottom:"2px solid #1a1917", paddingBottom:4 }}>받은 견적</div>
-            <div style={{ fontSize:8.5, color:"#9b9890", paddingBottom:4 }}>대화 내역</div>
-          </div>
-          <div style={{ textAlign:"center", padding:"40px 0", color:"#9b9890", fontSize:9 }}>받은 견적이 없어요</div>
-          <div onClick={() => setEmptyView(false)} style={{ fontSize:8.5, color:"#1d3fac", textAlign:"center", textDecoration:"underline", cursor:"pointer" }}>← 일반 뷰</div>
-        </div>
-      </Phone>
-    );
-  }
-
-  if (cancelled) {
-    return (
-      <Phone>
-        <div style={{ padding:"8px 12px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:12, color:"#374151" }}>‹</span><span style={{ fontSize:9, color:"#374151" }}>다시 요청하기</span></div>
-          <div style={{ fontSize:12, fontWeight:700, color:"#1a1917", lineHeight:1.4, margin:"6px 0 8px" }}>전문가의 견적 요청이<br/>취소되었어요</div>
-          <div style={{ border:"1px solid #e8e6e0", borderRadius:8, padding:"8px 9px", opacity:0.5 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}><span style={{ fontSize:9, fontWeight:700 }}>아르셀</span><span style={{ fontSize:8, color:"#9b9890" }}>★3 · 거래 302건 ›</span></div>
-            <div style={{ fontSize:14, fontWeight:700, color:"#9b9890", marginBottom:5 }}>2,700,000원</div>
-            <WBtn label="채팅 문의" disabled />
-          </div>
-          <div onClick={() => { setCancelled(false); setModal(false); setReason(null); }} style={{ fontSize:8.5, color:"#1d3fac", textAlign:"center", textDecoration:"underline", cursor:"pointer", marginTop:8 }}>← 되돌리기</div>
-        </div>
-      </Phone>
-    );
-  }
-
-  if (modal) {
-    return (
-      <div style={{ width:PW, flexShrink:0, background:"#fff", border:"2px solid #1a1917", borderRadius:22, overflow:"hidden", boxShadow:"4px 4px 0 #c9cdd6", alignSelf:"flex-start" }}>
-        <div style={{ background:"#1a1917", padding:"7px 16px", display:"flex", justifyContent:"space-between" }}><span style={{ fontSize:9, color:"#fff", fontWeight:700 }}>9:41</span><span style={{ fontSize:7, color:"#aaa" }}>▲▲ ◈ ■</span></div>
-        <div style={{ position:"relative" }}>
-          <div style={{ padding:"10px 11px", opacity:0.25, minHeight:80 }}><WRect h={30} fill="#f7f6f3" /><WRect h={20} fill="#f7f6f3" /></div>
-          <div style={{ position:"absolute", bottom:0, left:0, right:0, background:"#fff", borderTop:"1.5px solid #1a1917", borderRadius:"12px 12px 0 0", padding:"10px 12px" }}>
-            <div style={{ fontSize:11, fontWeight:700, color:"#1a1917", marginBottom:8 }}>취소 사유를 선택해 주세요</div>
-            {reasons.map(r => (
-              <div key={r} onClick={() => setReason(r)} style={{ display:"flex", alignItems:"flex-start", gap:6, padding:"5px 0", borderBottom:"1px solid #f7f6f3", cursor:"pointer" }}>
-                <div style={{ width:12, height:12, border:"1.5px solid "+(reason===r?"#1a1917":"#c9cdd6"), borderRadius:2, background:reason===r?"#1a1917":"transparent", flexShrink:0, marginTop:1, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  {reason===r && <span style={{ fontSize:8, color:"#fff" }}>✓</span>}
+              {steps.map((s) => (
+                <div key={s.n} style={{ display:"flex", gap:12, marginBottom:20 }}>
+                  <div style={{ width:40, height:40, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:s.actor.bg, border:"1.5px solid "+s.actor.border }}>{s.n}</div>
+                  <div style={{ flex:1, border:"1px solid #e8e6e0", borderRadius:6, background:"#fff", padding:"12px" }}>
+                    <div style={{ fontWeight:600, marginBottom:8 }}>{s.title}</div>
+                    <div style={{ display:"flex", gap:16 }}>
+                      <div style={{ flex:1, fontSize:12 }}>{s.desc}</div>
+                      {s.screen}
+                    </div>
+                  </div>
                 </div>
-                <span style={{ fontSize:8.5, color:"#374151", lineHeight:1.4 }}>{r}</span>
-              </div>
-            ))}
-            {reason === "기타" && <div style={{ border:"1px solid #d5d2cb", borderRadius:4, padding:"5px 7px", marginTop:5, minHeight:26 }}><span style={{ fontSize:8, color:"#c9cdd6" }}>기타 사유 입력 (최대 2000자)</span></div>}
-            <div style={{ marginTop:8, display:"flex", gap:5 }}>
-              <WBtn label="닫기" flex={1} />
-              <div onClick={() => reason && setCancelled(true)} style={{ flex:2, height:26, background:reason?"#fca5a5":"#f0ede6", border:"1px solid "+(reason?"#fca5a5":"#d5d2cb"), borderRadius:5, display:"flex", alignItems:"center", justifyContent:"center", cursor:reason?"pointer":"default" }}>
-                <span style={{ fontSize:9, color:reason?"#fff":"#c9cdd6", fontWeight:700 }}>취소하기</span>
-              </div>
+              ))}
             </div>
-          </div>
-        </div>
-        <div style={{ height:16, background:"#fff", display:"flex", alignItems:"center", justifyContent:"center" }}><div style={{ width:40, height:4, background:"#e8e6e0", borderRadius:2 }} /></div>
-      </div>
-    );
-  }
+          );
+        }
 
-  return (
-    <Phone>
-      <div style={{ padding:"8px 12px 10px" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-          <span style={{ fontSize:12, color:"#374151" }}>‹</span>
-          <span onClick={() => setModal(true)} style={{ fontSize:9, color:"#374151", cursor:"pointer" }}>견적 취소</span>
-        </div>
-        <div style={{ fontSize:11, fontWeight:700, color:"#1a1917", lineHeight:1.4, marginBottom:6 }}>전문가의 견적을 비교하고<br/>상담해 보세요</div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-          <div style={{ width:26, height:26, background:"#f7f6f3", border:"1px solid #e8e6e0", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:13 }}>👜</span></div>
-          <span style={{ fontSize:8.5, color:"#374151" }}>발렌시아가 르카골 솔더백 블랙 스몰</span>
-        </div>
-        <PhoneTabs tabs={["받은 견적 1","대화 내역"]} active={tab} onSelect={setTab} />
-        {tab === "받은 견적 1" ? (
-          <div>
-            {[
-              { name:"아르셀", price:"2,700,000", desc:"서울 갤러리아 앞 매장이 있으니 방문해서 최종 견적을 받을 수 있어요" },
-              { name:"문럭스", price:"2,700,000", desc:"서울 갤러리아 앞 매장이 있으니 방문해서 최종 견적을 받을 수 있어요" },
-            ].map((c,i) => (
-              <div key={i} style={{ border:"1px solid #e8e6e0", borderRadius:8, padding:"7px 9px", marginBottom:6 }}>
-                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-                  <span style={{ fontSize:10, fontWeight:700, color:"#1a1917" }}>{c.name}</span>
-                  <span style={{ fontSize:8, color:"#9b9890" }}>★3 · 거래 302건 ›</span>
-                </div>
-                <div style={{ fontSize:8, color:"#9b9890", marginBottom:2 }}>예상 견적가</div>
-                <div style={{ fontSize:14, fontWeight:700, color:"#1a1917", marginBottom:2 }}>{c.price}원</div>
-                <div style={{ fontSize:8, color:"#9b9890", marginBottom:6, lineHeight:1.4 }}>{c.desc}</div>
-                <WBtn label="채팅 문의" />
-              </div>
-            ))}
-            <div onClick={() => setEmptyView(true)} style={{ fontSize:8, color:"#9b9890", textAlign:"center", textDecoration:"underline", cursor:"pointer", marginTop:4 }}>빈 화면 보기 →</div>
-          </div>
-        ) : (
-          <div>
-            {[{ name:"아르셀", msg:"네네 가능합니다 · 오후 3:43", badge:2 }, { name:"문럭스", msg:"강남역 3분 거리에 매장이 있습니다 · 오후 12:20", badge:1 }].map((c,i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:7, padding:"7px 0", borderBottom:"1px solid #f0ede6" }}>
-                <div style={{ width:24, height:24, background:"#e8e6e0", borderRadius:"50%" }} />
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:9.5, fontWeight:700, color:"#1a1917", marginBottom:1 }}>{c.name}</div>
-                  <div style={{ fontSize:8, color:"#9b9890", lineHeight:1.4 }}>{c.msg}</div>
-                </div>
-                <div style={{ width:16, height:16, background:"#ff3b30", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontSize:8, color:"#fff", fontWeight:700 }}>{c.badge}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </Phone>
-  );
-}
-
-// ── Screen 7: 채팅방 ──────────────────────────────────────────────────────────
-function Screen7() {
-  return (
-    <Phone>
-      <div style={{ padding:"8px 12px 10px" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}><span style={{ fontSize:12, color:"#374151" }}>‹</span><span style={{ fontSize:9, color:"#374151" }}>⋯</span></div>
-        <div style={{ background:"#f0fdf4", border:"1px solid #a3d9b8", borderRadius:7, padding:"7px 10px", marginBottom:8, display:"flex", gap:7, alignItems:"center" }}>
-          <span style={{ fontSize:16 }}>📱</span>
-          <div>
-            <div style={{ fontSize:9.5, fontWeight:700, color:"#1a1917" }}>아이폰 15 Pro 256GB</div>
-            <div style={{ fontSize:8, color:"#9b9890" }}>가견적 1,080,000원 · A모바일</div>
-          </div>
-          <span style={{ marginLeft:"auto", fontSize:8, background:"#1a1917", color:"#fff", padding:"2px 6px", borderRadius:3, fontWeight:700 }}>매입</span>
-        </div>
-        <div style={{ background:"#f7f6f3", border:"1px solid #e8e6e0", borderRadius:10, borderBottomLeftRadius:2, padding:"7px 10px", marginBottom:6, maxWidth:"88%" }}>
-          <span style={{ fontSize:9, color:"#374151", lineHeight:1.6 }}>안녕하세요! 매입 상담을 시작합니다. 수거 정보를 공유해주시면 방문 일정 잡겠습니다.</span>
-        </div>
-        <WDivider />
-        <div style={{ display:"flex", gap:4, marginTop:5 }}>
-          <div style={{ flex:1, height:18, background:"#f7f6f3", border:"1px solid #d5d2cb", borderRadius:4, display:"flex", alignItems:"center", paddingLeft:7 }}><span style={{ fontSize:8.5, color:"#c9cdd6" }}>메시지 입력...</span></div>
-          <div style={{ width:18, height:18, background:"#1a1917", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:10, color:"#fff" }}>↑</span></div>
-        </div>
-        <div style={{ display:"flex", gap:4, marginTop:7 }}>
-          {[["📞","연락처"],["📍","주소"],["💳","계좌"]].map(([e,l]) => (
-            <div key={l} style={{ flex:1, height:30, background:"#eff3ff", border:"1px solid #a5b8f5", borderRadius:5, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2 }}>
-              <span style={{ fontSize:11 }}>{e}</span>
-              <span style={{ fontSize:7.5, color:"#1d3fac", fontWeight:600 }}>{l}</span>
+        // 메인 앱 컴포넌트
+        function App() {
+          return (
+            <div style={{ padding: 20, maxWidth: 800, margin: "0 auto", background: "#f7f6f3" }}>
+              <h1 style={{ fontSize: 24, marginBottom: 20 }}>매입지원 서비스 플로우</h1>
+              <TabFlow />
             </div>
-          ))}
-        </div>
-      </div>
-    </Phone>
-  );
-}
+          );
+        }
 
-// ── Screen 8-9: 미정 ─────────────────────────────────────────────────────────
-function ScreenTBD({ label }) {
-  return (
-    <Phone>
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:210, gap:8, padding:"10px" }}>
-        <div style={{ fontSize:24 }}>🚧</div>
-        <div style={{ fontSize:10, fontWeight:700, color:"#713f12", textAlign:"center" }}>화면 미확정</div>
-        <div style={{ fontSize:8.5, color:"#9b9890", textAlign:"center", lineHeight:1.5 }}>{label}<br/>논의 중</div>
-        <div style={{ background:"#fef9c3", border:"1px solid #fde047", borderRadius:4, padding:"4px 8px" }}>
-          <span style={{ fontSize:8, color:"#713f12", fontWeight:600 }}>미정 (TBD)</span>
-        </div>
-      </div>
-    </Phone>
-  );
-}
-
-function Screen10() {
-  return (
-    <Phone>
-      <div style={{ padding:"10px 12px" }}>
-        <div style={{ textAlign:"center", marginBottom:8 }}>
-          <div style={{ fontSize:11, color:"#1a1917", fontWeight:700, marginBottom:3 }}>A모바일과의 거래는 어떠셨나요?</div>
-          <div style={{ fontSize:8.5, color:"#9b9890" }}>좋았던 점을 선택해주세요</div>
-        </div>
-        <div style={{ display:"flex", flexWrap:"wrap", gap:5, justifyContent:"center", marginBottom:10 }}>
-          {["빠른 응답","친절한 상담","정확한 견적","빠른 수거","명확한 감가"].map((t,i) => (
-            <div key={t} style={{ padding:"4px 10px", background:i<3?"#1a1917":"#f7f6f3", border:"1px solid "+(i<3?"#1a1917":"#d5d2cb"), borderRadius:14 }}>
-              <span style={{ fontSize:8.5, color:i<3?"#fff":"#374151", fontWeight:600 }}>{t}</span>
-            </div>
-          ))}
-        </div>
-        <WBtn label="후기 남기기" primary />
-      </div>
-    </Phone>
-  );
-}
-
-// ── 과금 테이블 ───────────────────────────────────────────────────────────────
-function FeeTable() {
-  const rows = [
-    { cat:"오토바이", sub:"전 기종", fee:"50,000원" },
-    { cat:"스마트폰", sub:"전 기종", fee:"10,000원" },
-    { cat:"디지털기기", sub:"태블릿, 노트북 등", fee:"10,000원" },
-    { cat:"명품", sub:"견적 1,000만원 이상", fee:"100,000원" },
-    { cat:"", sub:"견적 500만~1,000만원", fee:"50,000원" },
-    { cat:"", sub:"견적 100만~500만원", fee:"20,000원" },
-    { cat:"", sub:"견적 100만원 언더", fee:"10,000원" },
-  ];
-  return (
-    <div style={{ border:"1px solid #e8e6e0", borderRadius:5, overflow:"hidden", fontSize:11, marginTop:8 }}>
-      <div style={{ display:"grid", gridTemplateColumns:"72px 1fr 90px", background:"#f7f6f3", borderBottom:"1px solid #e8e6e0" }}>
-        {["카테고리","세부 품목","확정 과금액"].map(h => <div key={h} style={{ padding:"5px 8px", fontSize:10, fontWeight:600, color:"#374151" }}>{h}</div>)}
-      </div>
-      {rows.map((r,i) => (
-        <div key={i} style={{ display:"grid", gridTemplateColumns:"72px 1fr 90px", borderBottom:i<rows.length-1?"1px solid #f0ede6":"none", background:r.cat===""?"#fafafa":"#fff" }}>
-          <div style={{ padding:"5px 8px", fontSize:11, fontWeight:r.cat?"600":"400", color:r.cat===""?"transparent":"#1a1917" }}>{r.cat||"ㅤ"}</div>
-          <div style={{ padding:"5px 8px", fontSize:11, color:"#374151" }}>{r.sub}</div>
-          <div style={{ padding:"5px 8px", fontSize:11, fontWeight:700, color:"#1a1917" }}>{r.fee}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Tab: Flow ──────────────────────────────────────────────────────────────────
-function TabFlow() {
-  const steps = [
-    { n:1, actor:S, title:"매입 홈 진입 → 카테고리 선택", cost:false,
-      desc:"홈 > 판매탭 진입. 헤더: '더 쉬운 거래, 매입 판매로 해결해요'. 배너 + 견적 신청하기 카테고리 그리드 (명품/스마트폰/디지털기기/오토바이). 하단 탭바: 견적신청 · 내 요청서 · 서비스 소개.",
-      note:null, screen:<Screen1 /> },
-    { n:2, actor:S, title:"견적 폼 작성", cost:false,
-      desc:"카테고리 선택 탭으로 4가지 폼 전환 가능. 공통: 사진(최소 1장, 최대 10장, 카메라/갤러리, 첫 사진=대표), 브랜드·모델명, 상세정보(선택, 2000자), 수량.",
-      extra: (
-        <div style={{ marginTop:8, border:"1px solid #e8e6e0", borderRadius:5, overflow:"hidden" }}>
-          <div style={{ display:"grid", gridTemplateColumns:"72px 1fr 1fr", background:"#f7f6f3", borderBottom:"1px solid #e8e6e0" }}>
-            {["카테고리","항목","입력 방식"].map(h => <div key={h} style={{ padding:"5px 8px", fontSize:10, fontWeight:600, color:"#374151" }}>{h}</div>)}
-          </div>
-          {[
-            ["스마트폰","용량","64/128/256/512GB/1TB 선택"],
-            ["","A/S 여부","공식 A/S, 사설 수리"],
-            ["","잔여 배터리","직접 입력"],
-            ["디지털기기","A/S 여부","공식 A/S, 사설 수리"],
-            ["명품","구성품","정품박스/보증서/더스트백/영수증"],
-            ["오토바이","연식","연도 선택 (최근 20년)"],
-            ["","주행거리","숫자 직접 입력 (km). '모름' 옵션"],
-            ["","수리 이력","있음/없음"],
-          ].map(([c,k,v],i) => (
-            <div key={i} style={{ display:"grid", gridTemplateColumns:"72px 1fr 1fr", borderBottom:i<7?"1px solid #f0ede6":"none", background:c===""?"#fafafa":"#fff" }}>
-              <div style={{ padding:"4px 8px", fontSize:10, fontWeight:c?"600":"400", color:c===""?"transparent":"#1a1917" }}>{c||"ㅤ"}</div>
-              <div style={{ padding:"4px 8px", fontSize:10, color:"#374151" }}>{k}</div>
-              <div style={{ padding:"4px 8px", fontSize:10, color:"#6b6860" }}>{v}</div>
-            </div>
-          ))}
-        </div>
-      ),
-      notes:[
-        "사진: 최소 1장, 최대 10장. 카메라 촬영·갤러리 선택 모두 허용. 첫 번째 사진이 대표 이미지.",
-        "유효성: 사진·브랜드·모델명 미입력 시 [견적 요청하기] 비활성 처리.",
-        "[견적 요청하기] 클릭 → '전문가에게 견적 요청이 전달되었어요' 완료 화면 → [견적 확인하기] 클릭 시 내 요청서 이동.",
-      ],
-      screen:<Screen2 /> },
-    { n:3, actor:P, title:"슬롯 활성화 + 입점 업자 전원 알림 발송", cost:false,
-      desc:"견적 요청 즉시 슬롯 10개 활성화, 72h 카운트다운 시작. 해당 카테고리 업자 전원 즉시 푸시.",
-      note:"슬롯 소진 or 72h 만료 중 먼저 도달 시 수신 종료", screen:<Screen3 /> },
-    { n:4, actor:B, title:"견적 요청 확인 → 가견적 입력 → 전송", cost:true,
-      desc:"업자 홈(MY > 구매탭)에서 신규 요청 확인. 가견적가 + 설명(100자) 입력 후 과금 팝업 확인 후 전송.",
-      note:"전송 후 취소·수정 불가. 슬롯 1개 소진.", screen:<Screen4 /> },
-    { n:5, actor:P, title:"견적 즉시 노출 + 판매자 푸시", cost:false,
-      desc:"도착 즉시 판매자 화면 목록에 추가. 10개 도달 시 추가 수신 자동 종료.",
-      notes:[
-        "슬롯 10개 소진 or 72h 만료 → 추가 수신 자동 종료",
-        "판매자가 [견적 그만 받기] 클릭 시 → 슬롯 미소진·유효시간 잔여와 무관하게 즉시 추가 수신 종료",
-      ],
-      screen:<Screen5 /> },
-    { n:6, actor:S, title:"견적 카드 비교 → 상담 선택", cost:true,
-      desc:"도착 순 정렬. [받은 견적] / [대화 내역] 탭. 가견적가·거래건수·채택률 비교. 최대 10명 동시 상담 가능. [견적 취소] 탭 시 사유 선택 바텀시트.",
-      extra:<FeeTable />,
-      notes:[
-        "취소 사유: 견적서 수정이 필요해요 / 다른 서비스에서 업체를 구했어요 / 제안받은 견적가가 마음에 안 들어요 / 단순 변심 / 기타(텍스트 2000자)",
-        "취소 완료 후: '전문가의 견적 요청이 취소되었어요' + [다시 요청하기]",
-        "빈 화면 상태: 아직 견적 없음(업자 검토 중) / 유효시간 만료 / 대화 내역 없음 → 화면 하단 '빈 화면 보기' 버튼으로 확인 가능",
-      ],
-      screen:<Screen6 /> },
-    { n:7, actor:T, title:"매입 전용 채팅방 생성 + 자동 첫 메시지", cost:false,
-      desc:"번개톡 기반 매입 전용 플래그 부여. 매물 요약 카드 상단 고정. 시스템 안내 메시지 자동 전송.",
-      note:"채팅방 상세 스펙 미확정. 별도 논의 필요.", screen:<ScreenTBD label="채팅방 스펙" /> },
-    { n:8, actor:T, title:"정보 공유 방식 (전화번호·주소·계좌)", cost:false,
-      desc:"매입 상담 과정에서 판매자의 개인정보를 업자에게 전달하는 방식.",
-      note:"방식 A/B/C 검토 중 — 미확정. 별도 논의 필요.",
-      screen:<ScreenTBD label="정보 공유 방식" /> },
-    { n:9, actor:T, title:"실물 검수 → 거래 완료", cost:false,
-      desc:"업자 실물 검수 후 최종 매입가 확정. 거래 완료 버튼 처리 및 후기 요청 플로우.",
-      note:"거래 완료 버튼 위치·권한·자동취소 조건 등 미확정. 별도 논의 필요.",
-      screen:<ScreenTBD label="거래 완료 플로우" /> },
-    { n:10, actor:S, title:"후기 작성 (선택)", cost:false,
-      desc:"별점 대신 긍정 키워드 뱃지 평가. 업자 프로필 신뢰 지표에 반영.",
-      note:null, screen:<Screen10 /> },
-  ];
-
-  return (
-    <div>
-      <div style={{ display:"flex", gap:10, marginBottom:16, flexWrap:"wrap", alignItems:"center" }}>
-        {[S,B,P].map(a => (
-          <div key={a.label} style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <Actor type={a} sm />
-            <span style={{ fontSize:11, color:"#6b6860" }}>{a.label==="판매자"?"판매자 행위":a.label==="업자"?"업자 행위":"시스템 처리"}</span>
-          </div>
-        ))}
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}><Actor type={T} sm /><span style={{ fontSize:11, color:"#6b6860" }}>미확정</span></div>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}><Chip text="과금" color={C.color} bg={C.bg} border={C.border} /><span style={{ fontSize:11, color:"#6b6860" }}>비용 발생</span></div>
-        <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:6 }}>
-          <div style={{ width:13, height:13, background:"#fff", border:"1.5px solid #1a1917", borderRadius:3 }} />
-          <span style={{ fontSize:10, color:"#9b9890" }}>와이어프레임 (디자인 미확정)</span>
-        </div>
-      </div>
-
-      <div style={{ position:"relative" }}>
-        <div style={{ position:"absolute", left:19, top:0, bottom:0, width:1, background:"#e8e6e0", zIndex:0 }} />
-        {steps.map((s) => (
-          <div key={s.n} style={{ display:"flex", gap:12, position:"relative", zIndex:1 }}>
-            <div style={{ width:40, height:40, borderRadius:"50%", flexShrink:0, marginTop:6, display:"flex", alignItems:"center", justifyContent:"center", background:s.actor.bg, border:"1.5px solid "+s.actor.border, fontSize:11, fontWeight:700, color:s.actor.color }}>{s.n}</div>
-            <div style={{ flex:1, border:"1px solid #e8e6e0", borderRadius:6, marginBottom:10, background:"#fff", overflow:"hidden" }}>
-              <div style={{ padding:"9px 14px", borderBottom:"1px solid #f0ede6", display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-                <Actor type={s.actor} sm />
-                <span style={{ fontSize:13, fontWeight:600, color:"#1a1917" }}>{s.title}</span>
-                {s.cost && <span style={{ marginLeft:"auto" }}><Chip text="과금" color={C.color} bg={C.bg} border={C.border} /></span>}
-                {s.actor === T && <span style={{ marginLeft:"auto" }}><Chip text="미정" color={T.color} bg={T.bg} border={T.border} /></span>}
-              </div>
-              <div style={{ padding:"12px 14px", display:"flex", gap:16, alignItems:"flex-start" }}>
-                <div style={{ flex:1 }}>
-                  <p style={{ fontSize:12, color:"#374151", lineHeight:1.7, marginBottom:6 }}>{s.desc}</p>
-                  {s.extra && s.extra}
-                  {s.notes && <div style={{ marginTop:8 }}>{s.notes.map((n,i) => <div key={i} style={{ display:"flex", gap:6, marginBottom:5 }}><span style={{ fontSize:10, color:"#a3d9b8", marginTop:3, flexShrink:0 }}>▸</span><span style={{ fontSize:11, color:"#374151", lineHeight:1.55 }}>{n}</span></div>)}</div>}
-                  {s.note && <div style={{ fontSize:11, color:s.actor===T?"#713f12":"#6b6860", borderLeft:"2px solid "+(s.actor===T?"#fde047":"#c9cdd6"), paddingLeft:9, marginTop:s.extra||s.notes?8:0 }}>{s.note}</div>}
-                </div>
-                {s.screen}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Other tabs ────────────────────────────────────────────────────────────────
-function TabHistory() {
-  const sessions = [
-    { date:"04.24", title:"번개톡 활용 방식 결정", items:[{text:"매입 거래 전용 소통 채널 필요성 합의",s:"done"},{text:"기존 번개톡 → 매입관 전용 채팅방 신규 구축으로 확정",s:"done"},{text:"매입관 전용 채팅방 구축으로 결정됨에 따라 상세 스펙 정리 필요",s:"pending"}]},
-    { date:"04.21", title:"상세기획 3차", items:[{text:"포인트 시스템: 광고 포인트 활용 확정 (C-lab 이력 관리 연동)",s:"done"},{text:"정보 공유 방식 (연락처/주소/계좌): 전용 버튼 카드 방식 확정",s:"done"},{text:"채팅방 비활성화: 거래완료·취소 후 상태 처리 정책 정리 필요",s:"pending"}]},
-    { date:"04.15", title:"상세기획 2차 + 운영정책", items:[{text:"입점 허들: 보증보험·계약서 제외, 사후 통제 중심으로 확정",s:"done"},{text:"이용약관: 업자 = 구매자 역할인 특수 케이스 법무 검토 필요",s:"pending"},{text:"제재 기준: '과도한 감액' 등 모호한 기준 정량화 기획 필요",s:"pending"},{text:"연락 두절: 판매자 무응답 시 귀책 제재 조항 별도 검토 예정",s:"pending"}]},
-    { date:"04.14", title:"상세기획 1차", items:[{text:"업자 계정 체계: 프로상점 UID에 매입 업자 flag 추가 방식 확정",s:"done"},{text:"슬롯 유효 시간: 72시간으로 확정",s:"done"},{text:"다시 요청하기: 1회 허용, 기존 카드 유지, 기존 업체 자동 제외 확정",s:"done"},{text:"과금 트리거: 견적 제출 500원 + 상담 시작 시 차등 과금 확정",s:"done"}]},
-    { date:"04.09", title:"상위기획 공유", items:[{text:"오픈 카테고리: 비상품권 4종 MVP 확정",s:"done"},{text:"서비스 방식: 견적형 (Pay-per-Lead) 확정",s:"done"},{text:"결제/정산: Phase 1 미제공, 거래완료 버튼 트래킹만",s:"done"}]},
-  ];
-  const pending = sessions.flatMap(x => x.items.filter(i => i.s==="pending"));
-  const docs = [
-    { label:"상위기획 Phase 1", url:"https://quicket.atlassian.net/wiki/spaces/md/pages/5358977500/Phase+1" },
-    { label:"Specdoc — 견적 플로우", url:"https://quicket.atlassian.net/wiki/spaces/md/pages/5387878717/Specdoc" },
-    { label:"Specdoc — 판매자 플로우", url:"https://quicket.atlassian.net/wiki/spaces/md/pages/5357764617/Specdoc" },
-    { label:"Specdoc — 업자 플로우", url:"https://quicket.atlassian.net/wiki/spaces/md/pages/5357600795/Specdoc" },
-    { label:"Specdoc — 상담 채팅", url:"https://quicket.atlassian.net/wiki/spaces/md/pages/5357568021/Specdoc" },
-    { label:"Specdoc — 플랫폼 어드민", url:"https://quicket.atlassian.net/wiki/spaces/md/pages/5357240332/Specdoc" },
-  ];
-  return (
-    <div>
-      {/* 기획서 링크 */}
-      <div style={{ border:"1px solid #e8e6e0", borderRadius:6, overflow:"hidden", marginBottom:20 }}>
-        <div style={{ padding:"8px 14px", background:"#f7f6f3", borderBottom:"1px solid #e8e6e0", fontSize:10, fontWeight:700, color:"#6b6860", letterSpacing:".06em" }}>
-          기획서 링크 — Confluence
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:0 }}>
-          {docs.map((d,i) => (
-            <a key={i} href={d.url} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 14px", borderBottom:i<3?"1px solid #f0ede6":"none", borderRight:i%3!==2?"1px solid #f0ede6":"none", textDecoration:"none", background:"#fff" }}>
-              <span style={{ fontSize:10, color:"#9b9890", flexShrink:0 }}>↗</span>
-              <span style={{ fontSize:11, color:"#1d3fac", fontWeight:500 }}>{d.label}</span>
-            </a>
-          ))}
-        </div>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
-        <div style={{ background:"#fff8ec", border:"1px solid #f5d09a", borderRadius:6, padding:"12px 14px" }}>
-          <div style={{ fontSize:10, fontWeight:700, color:"#8a4e00", letterSpacing:".06em", marginBottom:8 }}>PENDING — 미결 항목 ({pending.length}건)</div>
-          {pending.map((p,i) => <div key={i} style={{ display:"flex", gap:6, marginBottom:5 }}><span style={{ fontSize:10, color:"#b91c1c", marginTop:2, flexShrink:0 }}>▸</span><span style={{ fontSize:12, color:"#1a1917", lineHeight:1.5 }}>{p.text}</span></div>)}
-        </div>
-        <div style={{ background:"#f7f6f3", border:"1px solid #e3e0d9", borderRadius:6, padding:"12px 14px" }}>
-          <div style={{ fontSize:10, fontWeight:700, color:"#374151", letterSpacing:".06em", marginBottom:8 }}>PHASE 1 — 2026년 7월 오픈 목표</div>
-          {[["Squad Lead","kuma"],["T&S Reviewer","lily, teddy, haley, coline"],["Phase 1","7월 오픈"],["Phase 2","10월 (추석 전후)"]].map(([k,v]) => <div key={k} style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}><span style={{ color:"#6b6860" }}>{k}</span><span style={{ color:"#1a1917", fontWeight:500 }}>{v}</span></div>)}
-        </div>
-      </div>
-      {sessions.map((s,si) => (
-        <div key={si} style={{ marginBottom:12, border:"1px solid #e8e6e0", borderRadius:6, overflow:"hidden" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 14px", background:"#f7f6f3", borderBottom:"1px solid #e8e6e0" }}>
-            <span style={{ fontSize:11, fontWeight:700, color:"#6b6860", minWidth:36 }}>{s.date}</span>
-            <div style={{ width:1, height:14, background:"#d5d2cb" }} />
-            <span style={{ fontSize:13, fontWeight:600, color:"#1a1917" }}>{s.title}</span>
-            <span style={{ marginLeft:"auto", fontSize:11, color:"#9b9890" }}>{s.items.filter(i=>i.s==="done").length}/{s.items.length} 확정</span>
-          </div>
-          {s.items.map((item,ii) => (
-            <div key={ii} style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"8px 14px", borderBottom:ii<s.items.length-1?"1px solid #f0ede6":"none", background:item.s==="pending"?"#fffcfa":"#fff" }}>
-              <Status v={item.s} /><span style={{ fontSize:13, color:"#1a1917", lineHeight:1.6 }}>{item.text}</span>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TabScope() {
-  const cats = [{ name:"스마트폰", consult:"10,000원", ex:"아이폰, 갤럭시" },{ name:"명품", consult:"10,000 ~ 100,000원", ex:"시계, 쥬얼리, 가방" },{ name:"오토바이", consult:"50,000원", ex:"전 기종" },{ name:"디지털기기", consult:"10,000원", ex:"노트북, 태블릿" }];
-  const decisions = [
-    { n:"01", title:"서비스 방식", badge:"견적형", points:["판매자 매물 정보 입력 → 입점 업자 전원 알림 발송","슬롯: 요청당 최대 10개, 72시간 유효 (선착순)","견적 도착 즉시 판매자 화면 노출","판매자는 언제든 원하는 업자에게 상담 요청 가능"] },
-    { n:"02", title:"과금 구조", badge:"2단계", points:["1차: 견적 제안 시 광고포인트 500원 (즉시 확정, 환불 불가)","2차: 상담 선택 시 카테고리별 차등 과금","입점료 없음","과금 실패 시 채팅방 미생성 + 롤백"] },
-    { n:"03", title:"입점 방식", badge:"Closed MVP", points:["Phase 1: 플랫폼 선정 업체만 입점","사업자등록번호 보유 프로상점 회원","사기 이력 없음 확인","입점 즉시 프로상점 UID에 매입업자 flag 추가"] },
-    { n:"04", title:"결제/정산", badge:"Phase 1 미제공", points:["계좌 송금 기능 Phase 2 설계 예정","업자 주도 '거래 완료' 버튼으로 상태 트래킹만","거래 완료 시 실견적 필수 입력","판매자에게 후기 요청 푸시 자동 발송"] },
-    { n:"05", title:"다시 요청하기", badge:"1회 허용", points:["노출: 슬롯 소진 or 72h 만료 or 그만받기","기존 견적 카드 유지, 기존 업체 자동 제외","새 슬롯 72h 리셋 → 나머지 업체에만 재발송","1회 사용 후 버튼 비활성화"] },
-    { n:"06", title:"신뢰 지표", badge:"소프트 평가", points:["별점 대신 긍정 키워드 뱃지 평가","거래건수/채택률/응대율 프로필 공개","거래완료 처리 = 거래건수 +1","업자 평가 체계 기획 단계 반영 요청 (T&S)"] },
-  ];
-  return (
-    <div>
-      <Sec title="PHASE 1 MVP — 오픈 카테고리 + 상담 과금" />
-      <div style={{ border:"1px solid #e8e6e0", borderRadius:6, overflow:"hidden", marginBottom:20 }}>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", background:"#f7f6f3", borderBottom:"1px solid #e8e6e0" }}>
-          {["카테고리","상담 과금","대표 품목"].map(h => <div key={h} style={{ padding:"8px 12px", fontSize:11, fontWeight:600, color:"#374151" }}>{h}</div>)}
-        </div>
-        {cats.map((c,i) => (
-          <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", borderBottom:i<cats.length-1?"1px solid #f0ede6":"none" }}>
-            <div style={{ padding:"8px 12px", fontSize:12, fontWeight:600, color:"#1a1917" }}>{c.name}</div>
-            <div style={{ padding:"8px 12px" }}><span style={{ fontFamily:"monospace", fontSize:12, color:"#8a4e00", background:"#fff8ec", padding:"1px 6px", borderRadius:3, border:"1px solid #f5d09a" }}>{c.consult}</span></div>
-            <div style={{ padding:"8px 12px", fontSize:12, color:"#6b6860" }}>{c.ex}</div>
-          </div>
-        ))}
-      </div>
-      <div style={{ fontSize:11, color:"#9b9890", marginBottom:16 }}>견적 제안: 균일 500원 / 상담 선택: 카테고리별 차등</div>
-      <Sec title="DECISION LOG" />
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-        {decisions.map((d) => (
-          <div key={d.n} style={{ border:"1px solid #e8e6e0", borderRadius:6, overflow:"hidden" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px", background:"#f7f6f3", borderBottom:"1px solid #e8e6e0" }}>
-              <span style={{ fontSize:10, fontWeight:700, color:"#9b9890" }}>{d.n}</span>
-              <span style={{ fontSize:13, fontWeight:600, color:"#1a1917" }}>{d.title}</span>
-              <span style={{ marginLeft:"auto" }}><Chip text={d.badge} /></span>
-            </div>
-            <div style={{ padding:"10px 12px" }}>
-              {d.points.map((p,pi) => <div key={pi} style={{ display:"flex", gap:7, marginBottom:5 }}><span style={{ fontSize:10, color:"#c9cdd6", marginTop:3, flexShrink:0 }}>—</span><span style={{ fontSize:12, color:"#374151", lineHeight:1.55 }}>{p}</span></div>)}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TabChat() {
-  const customs = [
-    { n:"1", title:"매입 뱃지 부착", detail:"채팅방 목록 + 상단에 '매입' 뱃지 노출. 일반 C2C 번개톡과 시각적 구분.", who:"양측" },
-    { n:"2", title:"기존 상단 카드 제거", detail:"일반 번개톡의 '상품' 탭 등 C2C 거래 관련 UI 전면 제거.", who:"양측" },
-    { n:"3", title:"매입 전용 상단 카드", detail:"매물 요약 카드 상단 고정 (사진 + 제품명만). 판매자·업자 동일 뷰.", who:"양측" },
-    { n:"4", title:"자동 첫 메시지", detail:"채팅방 생성 직후 시스템 안내 메시지 자동 전송. 판매자 별도 액션 불필요.", who:"양측" },
-    { n:"5", title:"정보 공유 버튼", detail:"퀵메뉴 > [정보공유] 버튼. 바텀시트(연락처/주소/계좌) → 시스템 포맷 카드 전송.", who:"양측" },
-    { n:"6", title:"거래 완료 버튼", detail:"업자에게만 노출. 최종 매입가 입력 팝업 필수. 판매자 화면 미노출.", who:"업자만" },
-  ];
-  const states = [
-    { state:"상담 중", trigger:"판매자가 견적 채택 → 채팅방 생성", note:"" },
-    { state:"거래 완료", trigger:"업자가 [거래 완료] + 최종 매입가 입력", note:"판매자에게 후기 요청 푸시 발송" },
-    { state:"거래 취소", trigger:"상담방 생성 후 14일 경과 (자동)", note:"수동 취소 없음. 채팅방 처리 개발 협의 필요 (PENDING)" },
-  ];
-  return (
-    <div>
-      <Sec title="채팅 커스텀 항목 — 기존 번개톡 기반 6개 항목" />
-      <div style={{ border:"1px solid #e8e6e0", borderRadius:6, overflow:"hidden", marginBottom:20 }}>
-        <div style={{ display:"grid", gridTemplateColumns:"28px 1fr 2fr 60px", gap:12, padding:"8px 14px", background:"#f7f6f3", borderBottom:"1px solid #e8e6e0" }}>
-          {["#","항목","상세","대상"].map(h => <span key={h} style={{ fontSize:11, fontWeight:600, color:"#374151" }}>{h}</span>)}
-        </div>
-        {customs.map((c,i) => (
-          <div key={i} style={{ display:"grid", gridTemplateColumns:"28px 1fr 2fr 60px", gap:12, alignItems:"start", padding:"9px 14px", borderBottom:i<customs.length-1?"1px solid #f0ede6":"none" }}>
-            <span style={{ fontSize:11, fontWeight:700, color:"#9b9890" }}>{c.n}</span>
-            <span style={{ fontSize:12, fontWeight:600, color:"#1a1917" }}>{c.title}</span>
-            <span style={{ fontSize:12, color:"#374151", lineHeight:1.55 }}>{c.detail}</span>
-            <Chip text={c.who} color={c.who==="업자만"?B.color:P.color} bg={c.who==="업자만"?B.bg:P.bg} border={c.who==="업자만"?B.border:P.border} />
-          </div>
-        ))}
-      </div>
-      <Sec title="상담방 상태 머신" />
-      <div style={{ border:"1px solid #e8e6e0", borderRadius:6, overflow:"hidden" }}>
-        <div style={{ display:"grid", gridTemplateColumns:"100px 1fr 1fr", background:"#f7f6f3", borderBottom:"1px solid #e8e6e0" }}>
-          {["상태","진입 조건","비고"].map(h => <div key={h} style={{ padding:"8px 12px", fontSize:11, fontWeight:600, color:"#374151" }}>{h}</div>)}
-        </div>
-        {states.map((s,i) => (
-          <div key={i} style={{ display:"grid", gridTemplateColumns:"100px 1fr 1fr", borderBottom:i<states.length-1?"1px solid #f0ede6":"none" }}>
-            <div style={{ padding:"9px 12px", fontSize:12, fontWeight:600, color:"#1a1917" }}>{s.state}</div>
-            <div style={{ padding:"9px 12px", fontSize:12, color:"#374151" }}>{s.trigger}</div>
-            <div style={{ padding:"9px 12px", fontSize:11, color:s.note.includes("필요")?"#b91c1c":"#6b6860" }}>{s.note||"—"}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Root ──────────────────────────────────────────────────────────────────────
-const TABS = [
-  { label:"회의록", sub:"의사결정 히스토리" },
-  { label:"MVP 스코프", sub:"Phase 1 전략" },
-  { label:"통합 플로우", sub:"판매자·업자·시스템" },
-  { label:"채팅 스펙", sub:"번개톡 커스텀" },
-];
-
-export default function App() {
-  const [tab, setTab] = useState(0);
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css";
-    document.head.appendChild(link);
-    return () => { try { document.head.removeChild(link); } catch(e){} };
-  }, []);
-  return (
-    <div style={{ fontFamily:"'Pretendard Variable', -apple-system, system-ui, sans-serif", minHeight:"100vh", background:"#f7f6f3" }}>
-      <div style={{ background:"#1a1917", color:"#f5f4f0", padding:"16px 20px 0" }}>
-        <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:8 }}>
-          <div>
-            <div style={{ fontSize:10, fontWeight:600, color:"#9b9890", letterSpacing:".1em", marginBottom:5 }}>BUNJANG — EXPERT BUY-BACK SUPPORT — PHASE 1</div>
-            <div style={{ fontSize:19, fontWeight:700, color:"#f5f4f0", letterSpacing:"-.02em" }}>전문업자 매입지원 프로덕트</div>
-          </div>
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-            <Chip text="MVP" color="#f5f4f0" bg="#2d2c29" border="#4a4945" />
-            <Chip text="7월 오픈 목표" color="#f5d09a" bg="#2d2515" border="#5a3d10" />
-          </div>
-        </div>
-        <div style={{ display:"flex", gap:2 }}>
-          {TABS.map((t,i) => (
-            <button key={i} onClick={() => setTab(i)} style={{ padding:"9px 16px", fontSize:12, fontWeight:tab===i?600:400, color:tab===i?"#1a1917":"#9b9890", background:tab===i?"#f7f6f3":"transparent", border:"none", borderRadius:"5px 5px 0 0", cursor:"pointer", fontFamily:"inherit", display:"flex", flexDirection:"column", gap:2 }}>
-              <span>{t.label}</span>
-              <span style={{ fontSize:9, fontWeight:400, color:"#6b6860" }}>{t.sub}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div style={{ padding:18, maxWidth:980, margin:"0 auto" }}>
-        {tab===0 && <TabHistory />}
-        {tab===1 && <TabScope />}
-        {tab===2 && <TabFlow />}
-        {tab===3 && <TabChat />}
-      </div>
-    </div>
-  );
-}
+        // React 18 렌더링 방식
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
